@@ -28,6 +28,17 @@ class FaceAnalysisResult(BaseModel):
         }
     )
 
+class LandmarksAnalysisRequest(BaseModel):
+    landmarks: List[List[float]] = Field(..., description="Liste des 468 landmarks faciaux (format [[x,y,z], [x,y,z], ...] provenant de TensorFlow.js Facemesh)")
+    
+    model_config = ConfigDict(
+        json_schema_extra = {
+            "example": {
+                "landmarks": [[0.5, 0.5, -0.02], [0.6, 0.4, -0.01]]
+            }
+        }
+    )
+
 class RecommendationRequest(BaseModel):
     # Met l'exemple dans json_schema_extra via Field directement
     face_shape: str = Field(..., description="Forme du visage détectée ou supposée (ex: 'ronde', 'carrée', 'ovale').", json_schema_extra={'example': "ovale"})

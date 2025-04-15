@@ -204,3 +204,69 @@ def get_recommendations_for_face(face_shape: str) -> tuple[List[str], str]:
 
     logger.info(f"Recommandations générées (simple) : {recommendations}")
     return recommendations, analysis_info
+
+# Ajout de la fonction pour analyser les landmarks
+
+def analyze_face_from_landmarks(landmarks):
+    """
+    Analyse les landmarks du visage (format TensorFlow.js Facemesh) et détermine la forme du visage.
+    Les landmarks sont attendus au format [[x,y,z], [x,y,z], ...] (liste de 468 points en 3D).
+    
+    Args:
+        landmarks (List[List[float]]): Liste des 468 landmarks de TensorFlow.js Facemesh
+        
+    Returns:
+        str: Forme du visage identifiée ('ovale', 'rond', 'carré', etc.)
+    """
+    if not landmarks or len(landmarks) != 468:
+        return "non_déterminé"
+    
+    try:
+        # Prenons quelques points spécifiques qui peuvent aider à déterminer la forme
+        # Points pour la largeur au niveau des tempes (points 54 et 284 dans le modèle facemesh)
+        left_temple = landmarks[54]
+        right_temple = landmarks[284]
+        
+        # Points pour la largeur au niveau des joues (points approximatifs 58 et 288)
+        left_cheek = landmarks[58]
+        right_cheek = landmarks[288]
+        
+        # Points pour la mâchoire (points approximatifs 172 et 397)
+        left_jaw = landmarks[172]
+        right_jaw = landmarks[397]
+        
+        # Point du menton (point 152)
+        chin = landmarks[152]
+        
+        # Point central du front (point 10)
+        forehead = landmarks[10]
+        
+        # Calculer les largeurs à différents niveaux
+        temple_width = abs(right_temple[0] - left_temple[0])
+        cheek_width = abs(right_cheek[0] - left_cheek[0])
+        jaw_width = abs(right_jaw[0] - left_jaw[0])
+        
+        # Calculer la hauteur du visage
+        face_height = abs(chin[1] - forehead[1])
+        
+        # Ratios pour déterminer la forme
+        width_to_height = temple_width / face_height if face_height > 0 else 0
+        jaw_to_temple = jaw_width / temple_width if temple_width > 0 else 0
+        
+        # Logique simplifiée pour déterminer la forme
+        if width_to_height > 0.85:  # Visage plus large
+            if jaw_to_temple > 0.9:  # Mâchoire large
+                return "carré"
+            else:
+                return "rond"
+        else:  # Visage plus long
+            if jaw_to_temple < 0.8:  # Mâchoire fine
+                return "triangle_inversé"
+            elif jaw_to_temple > 1.1:  # Mâchoire plus large que les tempes
+                return "triangle"
+            else:
+                return "ovale"
+                
+    except Exception as e:
+        print(f"Erreur lors de l'analyse des landmarks: {e}")
+        return "non_déterminé"

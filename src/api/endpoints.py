@@ -2,10 +2,10 @@
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, status, Body
 # Imports simplifiés : plus besoin de Form, Response, cv2, numpy ici
-from src.core.processing import analyze_face_from_image_bytes, get_recommendations_for_face, get_recommendations_based_on_analysis
+from src.core.processing import analyze_face_from_image_bytes, get_recommendations_for_face, get_recommendations_based_on_analysis, analyze_face_from_landmarks
 # from src.core.rendering import render_overlay <<< SUPPRIMÉ
 # from src.core.models import get_3d_model_path <<< SUPPRIMÉ (sauf si on ajoute /list_models)
-from src.schemas.schemas import FaceAnalysisResult, RecommendationResult, RecommendationRequest, AnalyzeAndRecommendResult
+from src.schemas.schemas import FaceAnalysisResult, RecommendationResult, RecommendationRequest, AnalyzeAndRecommendResult, LandmarksAnalysisRequest
 import logging
 from typing import Optional, List # Ajout List si non présent
 
@@ -129,6 +129,51 @@ async def analyze_and_recommend_endpoint(
         recommendation=recommendation_result
     )
     return final_response
+
+# --- Endpoint d'Analyse des Landmarks ---
+@router.post(
+    "/analyze_landmarks",
+    response_model=RecommendationResult,
+    summary="Analyse les landmarks du visage et retourne des recommandations",
+    tags=["Analysis"]
+)
+async def analyze_landmarks_endpoint(
+    request_body: LandmarksAnalysisRequest = Body(..., description="Landmarks du visage détectés par TensorFlow.js")
+):
+    """
+    Accepte une liste de landmarks (468 points 3D) détectés par TensorFlow Facemesh,
+    analyse la forme du visage, et retourne des recommandations de lunettes basées sur cette analyse.
+    """
+    logger.info(f"[analyze_landmarks] Requête reçue avec {len(request_body.landmarks)} landmarks")
+    
+    if not request_body.landmarks or len(request_body.landmarks) != 468:
+        logger.warning(f"[analyze_landmarks] Nombre incorrect de landmarks: {len(request_body.landmarks) if request_body.landmarks else 0}")
+        # Retourner des recommandations par défaut plutôt que de lever une exception
+        return RecommendationResult(
+            recommended_glasses_ids=["purple1", "red"],
+            analysis_info="Forme non détectée. Recommandations par défaut."
+        )
+    
+    try:
+        # Utilise la fonction d'analyse spécifique aux landmarks
+        face_shape = analyze_face_from_landmarks(request_body.landmarks)
+        
+        # Génère des recommandations en utilisant la forme détectée
+        recommended_ids, analysis_info = get_recommendations_for_face(face_shape)
+        
+        logger.info(f"[analyze_landmarks] Analyse terminée: {face_shape}, recommandations: {recommended_ids}")
+        
+        return RecommendationResult(
+            recommended_glasses_ids=recommended_ids,
+            analysis_info=f"Forme détectée: {face_shape}. {analysis_info}"
+        )
+    except Exception as e:
+        logger.error(f"[analyze_landmarks] Erreur lors de l'analyse: {e}", exc_info=True)
+        # En cas d'erreur, retourner des recommandations par défaut
+        return RecommendationResult(
+            recommended_glasses_ids=["purple1", "black_round"],
+            analysis_info="Erreur lors de l'analyse. Recommandations par défaut."
+        )
 
 # --- (Optionnel) Endpoint pour lister les modèles ---
 # Décommente et adapte si besoin

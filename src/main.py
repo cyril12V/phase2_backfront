@@ -1,6 +1,7 @@
 # src/main.py
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from src.api.endpoints import router as api_router
 from src.core.models import get_face_landmarker # Garde l'initialisation Mediapipe
 # from src.core.rendering import initialize_renderer <<< LIGNE SUPPRIMÉE
@@ -15,6 +16,21 @@ app = FastAPI(
     title="Optical Factory API - Analysis & Recommendation", # Titre mis à jour
     description="API backend fournissant l'analyse faciale (pose, landmarks, forme) et la recommandation de lunettes.", # Desc mise à jour
     version="0.2.0" # Version indiquant le changement d'archi
+)
+
+# Configuration CORS pour permettre les requêtes du frontend
+origins = [
+    "http://localhost:3000",    # Frontend en développement
+    "http://localhost:5000",    # Autre port potentiel
+    "https://optical-factory-frontend.vercel.app"  # URL de production frontend (à adapter)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Permet toutes les méthodes
+    allow_headers=["*"],  # Permet tous les headers
 )
 
 # --- Événements de Démarrage/Arrêt ---
