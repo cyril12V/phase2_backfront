@@ -1,0 +1,10 @@
+node_modules
+.env
+__pycache__
+src/api
+tests
+models
+benchmark
+**/node_modules/.cache
+.vscode
+.git 

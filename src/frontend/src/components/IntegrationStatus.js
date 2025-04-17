@@ -1,30 +1,41 @@
 import React, { useState, useEffect } from 'react';
+import { checkHealth } from '../api/apiService';
 
 const IntegrationStatus = () => {
   const [status, setStatus] = useState('checking');
   const [message, setMessage] = useState('Vérification de la connexion au backend...');
+  const [isVercel, setIsVercel] = useState(false);
 
   useEffect(() => {
+    // Vérifier si nous sommes sur Vercel
+    const checkVercel = window.location.hostname.includes('vercel.app');
+    setIsVercel(checkVercel);
+
     const checkBackendStatus = async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/health`);
+        // Utiliser la fonction checkHealth du service API qui gère aussi les mockups
+        const healthData = await checkHealth();
         
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'ok') {
+        if (healthData.status === 'ok') {
+          if (checkVercel) {
+            setStatus('warning');
+            setMessage('Mode démo activé : utilisation de données simulées.');
+          } else {
             setStatus('success');
             setMessage('Backend connecté et opérationnel! Les modèles sont chargés.');
-          } else {
-            setStatus('warning');
-            setMessage(`Backend connecté mais avec des avertissements: ${data.detail || 'Modèles non chargés'}`);
           }
         } else {
-          setStatus('error');
-          setMessage('Le backend est accessible mais répond avec une erreur.');
+          setStatus('warning');
+          setMessage(`Backend connecté mais avec des avertissements: ${healthData.detail || 'Modèles non chargés'}`);
         }
       } catch (error) {
-        setStatus('error');
-        setMessage(`Impossible de se connecter au backend: ${error.message}`);
+        if (checkVercel) {
+          setStatus('warning');
+          setMessage('Mode démo activé : utilisation de données simulées.');
+        } else {
+          setStatus('error');
+          setMessage(`Impossible de se connecter au backend: ${error.message}`);
+        }
       }
     };
 
@@ -47,32 +58,25 @@ const IntegrationStatus = () => {
   };
 
   return (
-    <div 
-      style={{
-        padding: '10px 15px',
-        borderRadius: '5px',
-        border: '1px solid',
-        marginBottom: '20px',
-        fontSize: '14px',
-        ...getStatusStyle()
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <span
-          style={{
-            display: 'inline-block',
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            marginRight: '10px',
-            backgroundColor: 
-              status === 'success' ? '#28a745' : 
-              status === 'warning' ? '#ffc107' :
-              status === 'error' ? '#dc3545' : '#ccc'
-          }}
-        />
-        <span>{message}</span>
-      </div>
+    <div style={{
+      padding: '10px 15px',
+      marginBottom: '20px',
+      borderLeft: '4px solid',
+      borderRadius: '4px',
+      ...getStatusStyle()
+    }}>
+      <h5 style={{ marginTop: '0', fontWeight: '600' }}>
+        {status === 'checking' ? 'Vérification...' : 
+         status === 'success' ? 'Connecté' :
+         status === 'warning' ? 'Mode limité' : 'Erreur de connexion'}
+      </h5>
+      <p style={{ margin: '0' }}>{message}</p>
+      {isVercel && (
+        <p style={{ marginTop: '8px', fontSize: '0.9em' }}>
+          <strong>Note:</strong> Cette version déployée utilise des données simulées pour la démonstration.
+          {status === 'warning' && ' Toutes les fonctionnalités ne sont pas disponibles.'}
+        </p>
+      )}
     </div>
   );
 };

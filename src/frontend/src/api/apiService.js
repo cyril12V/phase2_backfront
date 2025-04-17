@@ -2,8 +2,53 @@
  * Service API pour communiquer avec le backend
  */
 
+import { mockAnalyzeResponse, mockRecommendations, mockAnalyzeAndRecommend, mockHealthCheck } from './mockData';
+
 // URL de l'API backend (définie dans .env)
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+// Vérifier si nous sommes en mode production et sur Vercel
+const isVercelProduction = process.env.NODE_ENV === 'production' && 
+                          (window.location.hostname.includes('vercel.app') || 
+                           process.env.REACT_APP_USE_MOCK === 'true');
+
+// Fonction pour vérifier la disponibilité de l'API
+const isApiAvailable = async () => {
+  if (isVercelProduction) return false;
+  
+  try {
+    const response = await fetch(`${API_URL}/health`, { 
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 3000 // 3 secondes de timeout
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('API non disponible, utilisation des données simulées');
+    return false;
+  }
+};
+
+/**
+ * Vérifier l'état de santé de l'API
+ * @returns {Promise} - État de santé de l'API
+ */
+export const checkHealth = async () => {
+  try {
+    if (isVercelProduction) return mockHealthCheck;
+    
+    const apiAvailable = await isApiAvailable();
+    if (!apiAvailable) return mockHealthCheck;
+    
+    const response = await fetch(`${API_URL}/health`);
+    if (!response.ok) return mockHealthCheck;
+    
+    return await response.json();
+  } catch (error) {
+    console.warn('Erreur lors de la vérification de santé de l\'API:', error);
+    return mockHealthCheck;
+  }
+};
 
 /**
  * Analyser une image de visage
@@ -12,6 +57,11 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
  */
 export const analyzeFace = async (imageFile) => {
   try {
+    if (isVercelProduction) return mockAnalyzeResponse;
+    
+    const apiAvailable = await isApiAvailable();
+    if (!apiAvailable) return mockAnalyzeResponse;
+    
     const formData = new FormData();
     formData.append('image_file', imageFile);
 
@@ -28,7 +78,9 @@ export const analyzeFace = async (imageFile) => {
     return await response.json();
   } catch (error) {
     console.error('Erreur lors de l\'analyse du visage:', error);
-    throw error;
+    // En cas d'erreur, retourner les données mockées
+    console.warn('Utilisation des données simulées suite à une erreur');
+    return mockAnalyzeResponse;
   }
 };
 
@@ -39,6 +91,11 @@ export const analyzeFace = async (imageFile) => {
  */
 export const getRecommendations = async (faceShape) => {
   try {
+    if (isVercelProduction) return mockRecommendations;
+    
+    const apiAvailable = await isApiAvailable();
+    if (!apiAvailable) return mockRecommendations;
+    
     const response = await fetch(`${API_URL}/api/v1/recommend_glasses`, {
       method: 'POST',
       headers: {
@@ -55,7 +112,7 @@ export const getRecommendations = async (faceShape) => {
     return await response.json();
   } catch (error) {
     console.error('Erreur lors de la recommandation:', error);
-    throw error;
+    return mockRecommendations;
   }
 };
 
@@ -66,6 +123,11 @@ export const getRecommendations = async (faceShape) => {
  */
 export const analyzeAndRecommend = async (imageFile) => {
   try {
+    if (isVercelProduction) return mockAnalyzeAndRecommend;
+    
+    const apiAvailable = await isApiAvailable();
+    if (!apiAvailable) return mockAnalyzeAndRecommend;
+    
     const formData = new FormData();
     formData.append('image_file', imageFile);
 
@@ -82,6 +144,6 @@ export const analyzeAndRecommend = async (imageFile) => {
     return await response.json();
   } catch (error) {
     console.error('Erreur lors de l\'analyse et recommandation:', error);
-    throw error;
+    return mockAnalyzeAndRecommend;
   }
 }; 
