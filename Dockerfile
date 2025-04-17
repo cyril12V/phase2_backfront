@@ -13,8 +13,15 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copier le code source de l'application
 COPY ./src ./src
-# Copier la configuration .env pour l'utiliser comme défaut si non monté
-COPY ./.env ./.env
+
+# Créer un fichier .env par défaut
+RUN echo "# Configuration par défaut (remplacée par les variables d'environnement)" > ./.env && \
+    echo "LOG_LEVEL=INFO" >> ./.env && \
+    echo "FACE_MODEL_PATH=./models/face_landmarker_v2_with_blendshapes.task" >> ./.env
+
+# Copier la configuration .env si elle existe (écrasera celle par défaut)
+COPY ./.env* ./ 2>/dev/null || true
+
 # Copier le modèle Mediapipe (requis pour l'analyse)
 COPY ./models/face_landmarker_v2_with_blendshapes.task ./models/face_landmarker_v2_with_blendshapes.task
 

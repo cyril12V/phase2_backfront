@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+.github
+
+# Environnements Python
+venv
+__pycache__
+*.pyc
+
+# Fichiers d'environnement (sauf .env principal)
+.env.*
+!.env
+
+# Dossiers frontend
+src/frontend/node_modules
+src/frontend/build
+
+# Fichiers de configuration IDE
+.vscode
+.idea
+
+# Tests et benchmark
+tests
+benchmark
+
+# Misc
+*.log
+*.md
+!README.md 
