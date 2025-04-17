@@ -30,5 +30,5 @@ EXPOSE 8000
 
 # Commande pour lancer l'application FastAPI
 # Utilise --host 0.0.0.0 pour écouter sur toutes les interfaces
-# Le port est souvent fourni par la variable d'environnement PORT sur les PaaS
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Utilise un script shell pour gérer la variable d'environnement PORT
+CMD bash -c "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}"
