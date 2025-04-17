@@ -19,8 +19,8 @@ RUN echo "# Configuration par défaut (remplacée par les variables d'environnem
     echo "LOG_LEVEL=INFO" >> ./.env && \
     echo "FACE_MODEL_PATH=./models/face_landmarker_v2_with_blendshapes.task" >> ./.env
 
-# Copier la configuration .env si elle existe (écrasera celle par défaut)
-COPY ./.env* ./ 2>/dev/null || true
+# Copier la configuration .env si elle existe
+COPY .env ./.env
 
 # Copier le modèle Mediapipe (requis pour l'analyse)
 COPY ./models/face_landmarker_v2_with_blendshapes.task ./models/face_landmarker_v2_with_blendshapes.task
